@@ -141,6 +141,9 @@ def plot(series, cfg=None):
     if minimum > maximum:
         raise ValueError('The min value cannot exceed the max value.')
 
+    #y-axis appears on 'left', 'right' or 'both'
+    y_axis_pos = cfg.get('y-axis-pos', 'right')
+
     interval = maximum - minimum
     offset = cfg.get('offset', 3)
     height = cfg.get('height', interval)
@@ -162,6 +165,11 @@ def plot(series, cfg=None):
         width = max(width, len(series[i]))
     width += offset
 
+    if y_axis_pos == 'both':
+        width += 1
+    elif y_axis_pos == 'left' or y_axis_pos == 'right':
+        width += 1
+
     placeholder = cfg.get('format', '{:8.2f} ')
 
     result = [[' '] * width for i in range(rows + 1)]
@@ -169,13 +177,21 @@ def plot(series, cfg=None):
     # axis and labels
     for y in range(min2, max2 + 1):
         label = placeholder.format(maximum - ((y - min2) * interval / (rows if rows else 1)))
-        result[y - min2][max(offset - len(label), 0)] = label
-        result[y - min2][offset - 1] = symbols[0] if y == 0 else symbols[1]  # zero tick mark
+        if y_axis_pos == 'left' or y_axis_pos == 'both':
+            result[y - min2][max(offset - len(label), 0)] = label
+            result[y - min2][offset - 1] = symbols[0] if y == 0 else symbols[1]  # zero tick mark
+        if y_axis_pos == 'right' or y_axis_pos == 'both':
+            result[y - min2][-1] = label
+            result[y - min2][-2] = symbols[0] if y == 0 else symbols[1]  # zero tick mark
 
     # first value is a tick mark across the y-axis
     d0 = series[0][0]
-    if _isnum(d0):
+    if _isnum(d0) and (y_axis_pos == 'left' or y_axis_pos == 'both'):
         result[rows - scaled(d0)][offset - 1] = symbols[0]
+
+    dn = series[0][-1]
+    if _isnum(dn) and (y_axis_pos == 'right' or y_axis_pos == 'both'):
+        result[rows - scaled(dn)][-2] = symbols[0]
 
     for i in range(0, len(series)):
 
